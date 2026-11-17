@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#08090a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>LUMA — Professional Camera</title>
+<style>
+:root{--bg:#08090a;--gold:#c6a978;--white:#f5f3ed}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--white);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;overflow:hidden;user-select:none}
+button,select,input{font:inherit}button{color:inherit;cursor:pointer}
+#camera{position:fixed;inset:0;background:#17191a;overflow:hidden}
+#video{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;filter:var(--profile-filter,none)}
+#shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom,rgba(0,0,0,.55),transparent 25%,transparent 65%,rgba(0,0,0,.68))}
+#top{position:absolute;top:env(safe-area-inset-top,12px);left:0;right:0;padding:17px 20px;display:flex;align-items:center;justify-content:space-between}
+.brand{font-size:19px;letter-spacing:5px}.subbrand{font-size:8px;letter-spacing:2px;color:#bbb;margin-top:4px}
+.top-right{display:flex;gap:8px;align-items:center}.pill{border:1px solid #ffffff50;background:#0008;border-radius:20px;padding:8px 12px;font-size:10px;letter-spacing:1px;backdrop-filter:blur(12px)}.pill.active{background:var(--gold);color:#17130e;border-color:var(--gold)}
+#status{position:absolute;top:88px;left:20px;right:20px;display:flex;justify-content:space-between;color:#fff;font-size:11px;letter-spacing:1px;text-shadow:0 1px 5px #000}
+#focusBox{position:absolute;top:45%;left:50%;width:55px;height:55px;transform:translate(-50%,-50%);border:1px solid #ffffffb0;opacity:0;transition:opacity .3s}#focusBox.show{opacity:1}
+#sideControls{position:absolute;right:16px;top:35%;display:flex;flex-direction:column;gap:13px}
+.side-btn{width:42px;height:42px;border-radius:50%;border:1px solid #ffffff55;background:#0008;backdrop-filter:blur(12px);font-size:15px}
+#bottom{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 17px);left:0;right:0;padding:0 20px}
+#profiles{display:flex;justify-content:center;gap:7px;margin-bottom:22px;flex-wrap:wrap}
+.profile{border:1px solid #ffffff55;background:#0009;padding:9px 11px;border-radius:18px;font-size:10px;letter-spacing:.4px}.profile.active{border-color:var(--gold);color:var(--gold)}
+#captureRow{display:flex;align-items:center;justify-content:space-between;max-width:420px;margin:auto}
+.round-action{width:48px;height:48px;border-radius:50%;background:#0008;border:1px solid #ffffff60;display:flex;align-items:center;justify-content:center;font-size:18px}
+#shutter{width:76px;height:76px;border-radius:50%;border:3px solid #fff;background:transparent;display:grid;place-items:center}
+#shutter span{width:60px;height:60px;border-radius:50%;background:#f5f3ed;display:block}
+#shutter:active{transform:scale(.94)}#bottomLabel{text-align:center;color:#ddd;font-size:9px;letter-spacing:2px;margin-top:12px}
+#panel{position:fixed;left:0;right:0;bottom:0;z-index:5;background:rgba(12,14,16,.97);border-radius:24px 24px 0 0;padding:17px 20px calc(env(safe-area-inset-bottom,0px) + 20px);max-height:78vh;overflow:auto;transform:translateY(110%);transition:transform .3s ease;backdrop-filter:blur(24px)}
+#panel.open{transform:translateY(0)}.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:17px}.panel-title{font-size:12px;letter-spacing:3px}.close{background:none;border:0;font-size:23px;color:#aaa}
+.tabs{display:flex;gap:8px;margin-bottom:18px}.tab{flex:1;background:#222629;border:0;border-radius:9px;padding:11px;font-size:11px;color:#aaa}.tab.active{background:#c6a978;color:#15120e}
+.control{margin:17px 0}.control-head{display:flex;justify-content:space-between;font-size:12px;margin-bottom:9px}.control-head span:last-child{color:var(--gold)}
+input[type=range]{width:100%;accent-color:var(--gold)}
+select{background:#25282a;color:white;border:1px solid #45494a;padding:10px;border-radius:8px;width:100%}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.option{border:1px solid #444;background:#1b1e20;padding:13px;border-radius:10px;text-align:left;font-size:12px}.option.active{border-color:var(--gold);color:var(--gold)}
+#editor{position:fixed;inset:0;background:#090a0b;z-index:10;display:none;overflow:auto;padding:env(safe-area-inset-top,20px) 18px calc(env(safe-area-inset-bottom,0px) + 25px)}
+#editor.open{display:block}#editorHeader{display:flex;justify-content:space-between;align-items:center;padding:12px 0 20px}
+#photoPreview{width:100%;max-height:43vh;object-fit:contain;background:#151719}
+.editor-actions{display:flex;gap:10px;margin:15px 0}.action{flex:1;padding:13px;border:1px solid #555;background:#202325;border-radius:9px;font-size:12px}.action.primary{background:var(--gold);color:#15120e;border:0}
+#editorControls{padding-bottom:20px}.hint{font-size:11px;color:#92979b;line-height:1.6}
+#toast{position:fixed;left:50%;bottom:115px;transform:translateX(-50%);background:#222c;color:white;padding:11px 16px;border-radius:20px;font-size:12px;z-index:30;opacity:0;pointer-events:none;transition:opacity .2s}#toast.show{opacity:1}
+#fileInput{display:none}
+</style>
+</head>
+<body>
+<div id="camera">
+  <video id="video" autoplay playsinline muted></video>
+  <div id="shade"></div>
+  <div id="top">
+    <div><div class="brand">LUMA</div><div class="subbrand">PROFESSIONAL CAMERA</div></div>
+    <div class="top-right"><button class="pill active" id="autoMode">AUTO</button><button class="pill" id="proMode">PRO</button></div>
+  </div>
+  <div id="status"><span>ISO <strong id="isoRead">AUTO</strong></span><span>SHUTTER <strong id="shutterRead">AUTO</strong></span><span>EV <strong id="evRead">0.0</strong></span><span id="battery">● LIVE</span></div>
+  <div id="focusBox"></div>
+  <div id="sideControls">
+    <button class="side-btn" id="settingsBtn" title="相機設定">⚙</button>
+    <button class="side-btn" id="wbBtn" title="白平衡">☼</button>
+    <button class="side-btn" id="flipBtn" title="切換鏡頭">↻</button>
+  </div>
+  <div id="bottom">
+    <div id="profiles">
+      <button class="profile active" data-profile="natural">NATURAL</button>
+      <button class="profile" data-profile="portrait">PORTRAIT</button>
+      <button class="profile" data-profile="landscape">LANDSCAPE</button>
+    </div>
+    <div id="captureRow">
+      <button class="round-action" id="importBtn" title="匯入照片">▧</button>
+      <button id="shutter" aria-label="拍照"><span></span></button>
+      <button class="round-action" id="darkroomBtn" title="Digital Darkroom">◐</button>
+    </div>
+    <div id="bottomLabel">TAP TO FOCUS · DIGITAL MEDIUM FORMAT</div>
+  </div>
+</div>
+
+<div id="panel">
+  <div class="panel-head"><div class="panel-title">CAMERA SETTINGS</div><button class="close" id="closePanel">×</button></div>
+  <div class="tabs"><button class="tab active" data-tab="exposure">EXPOSURE</button><button class="tab" data-tab="color">COLOR</button></div>
+  <section id="exposureTab">
+    <div class="control"><div class="control-head"><span>ISO</span><span id="isoValue">AUTO</span></div><select id="iso"><option value="auto">AUTO</option><option>50</option><option>100</option><option>200</option><option>400</option><option>800</option><option>1600</option><option>3200</option></select></div>
+    <div class="control"><div class="control-head"><span>SHUTTER SPEED</span><span id="speedValue">AUTO</span></div><select id="speed"><option value="auto">AUTO</option><option>1/30</option><option>1/60</option><option>1/125</option><option>1/250</option><option>1/500</option><option>1/1000</option></select></div>
+    <div class="control"><div class="control-head"><span>EXPOSURE COMPENSATION</span><span id="evValue">0.0 EV</span></div><input id="ev" type="range" min="-2" max="2" step=".1" value="0"></div>
+    <div class="control"><div class="control-head"><span>WHITE BALANCE</span><span id="wbValue">AUTO</span></div><select id="wb"><option>AUTO</option><option>DAYLIGHT</option><option>CLOUDY</option><option>SHADE</option><option>TUNGSTEN</option><option>FLUORESCENT</option></select></div>
+    <p class="hint">ISO、快門及白平衡在網頁版作為拍攝設定顯示；Safari 不一定允許網頁直接控制 iPhone 相機硬件。</p>
+  </section>
+  <section id="colorTab" hidden>
+    <div class="grid2">
+      <button class="option active" data-profile="natural">NATURAL<br><small>自然通透</small></button>
+      <button class="option" data-profile="portrait">PORTRAIT<br><small>柔和膚色</small></button>
+      <button class="option" data-profile="landscape">LANDSCAPE<br><small>自然層次</small></button>
+    </div>
+    <div class="control"><div class="control-head"><span>COLOR INTENSITY</span><span id="intensityValue">100%</span></div><input id="intensity" type="range" min="0" max="150" value="100"></div>
+  </section>
+</div>
+
+<div id="editor">
+  <div id="editorHeader"><button class="close" id="backCamera">‹</button><div class="panel-title">DIGITAL DARKROOM</div><button class="close" id="resetEdit">↺</button></div>
+  <img id="photoPreview" alt="Photo preview">
+  <div class="editor-actions"><button class="action" id="editImport">IMPORT</button><button class="action primary" id="savePhoto">SAVE PHOTO</button></div>
+  <div id="editorControls">
+    <div class="control"><div class="control-head"><span>COLOR PROFILE</span><span id="editProfileName">NATURAL</span></div><div class="grid2"><button class="option active" data-editprofile="natural">NATURAL</button><button class="option" data-editprofile="portrait">PORTRAIT</button><button class="option" data-editprofile="landscape">LANDSCAPE</button><button class="option" data-editprofile="original">ORIGINAL</button></div></div>
+    <div class="control"><div class="control-head"><span>EXPOSURE</span><span id="editExposureVal">0</span></div><input type="range" id="editExposure" min="-100" max="100" value="0"></div>
+    <div class="control"><div class="control-head"><span>CONTRAST</span><span id="editContrastVal">0</span></div><input type="range" id="editContrast" min="-50" max="50" value="0"></div>
+    <div class="control"><div class="control-head"><span>SATURATION</span><span id="editSaturationVal">0</span></div><input type="range" id="editSaturation" min="-50" max="50" value="0"></div>
+    <div class="control"><div class="control-head"><span>WARMTH</span><span id="editWarmthVal">0</span></div><input type="range" id="editWarmth" min="-50" max="50" value="0"></div>
+    <p class="hint">調色效果會套用在匯出照片上。色彩風格是 LUMA 的創作預設，並非官方 Hasselblad 色彩設定或認證。</p>
+  </div>
+</div>
+<input id="fileInput" type="file" accept="image/*">
+<div id="toast"></div>
+<canvas id="canvas" hidden></canvas>
+
+<script>
+const $=id=>document.getElementById(id);
+const video=$('video'), canvas=$('canvas'), ctx=canvas.getContext('2d');
+let stream=null,facing='environment',currentProfile='natural',currentPhoto=null,photoName='LUMA',editProfile='natural';
+let mode='auto';
+const profiles={
+ natural:{filter:'saturate(.91) contrast(.97) brightness(1.015) sepia(.025)',sat:.93,contrast:.98,warm:2},
+ portrait:{filter:'saturate(.86) contrast(.94) brightness(1.035) sepia(.055)',sat:.88,contrast:.95,warm:7},
+ landscape:{filter:'saturate(1.08) contrast(1.04) brightness(1.005)',sat:1.08,contrast:1.05,warm:0},
+ original:{filter:'none',sat:1,contrast:1,warm:0}
+};
+function toast(msg){$('toast').textContent=msg;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2200)}
+async function startCamera(){
+ try{
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing,width:{ideal:1920},height:{ideal:1080}},audio:false});
+  video.srcObject=stream;await video.play();$('battery').textContent='● LIVE';
+ }catch(e){$('battery').textContent='● CAMERA OFF';toast('無法開啟相機，請允許 Safari 使用相機，或匯入照片');}
+}
+function applyProfile(p){
+ currentProfile=p;
+ document.querySelectorAll('.profile').forEach(b=>b.classList.toggle('active',b.dataset.profile===p));
+ document.querySelectorAll('[data-profile]').forEach(b=>b.classList.toggle('active',b.dataset.profile===p));
+ video.style.setProperty('--profile-filter',profiles[p].filter);
+}
+$('autoMode').onclick=()=>setMode('auto');$('proMode').onclick=()=>setMode('pro');
+function setMode(m){mode=m;$('autoMode').classList.toggle('active',m==='auto');$('proMode').classList.toggle('active',m==='pro');if(m==='pro')openPanel('exposure');}
+$('settingsBtn').onclick=()=>openPanel('exposure');$('wbBtn').onclick=()=>openPanel('exposure');$('closePanel').onclick=()=>$('panel').classList.remove('open');
+function openPanel(tab){$('panel').classList.add('open');switchTab(tab)}
+function switchTab(tab){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));$('exposureTab').hidden=tab!=='exposure';$('colorTab').hidden=tab!=='color'}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+document.querySelectorAll('.profile').forEach(b=>b.onclick=()=>applyProfile(b.dataset.profile));
+document.querySelectorAll('.option[data-profile]').forEach(b=>b.onclick=()=>applyProfile(b.dataset.profile));
+$('iso').onchange=e=>{$('isoValue').textContent=e.target.value.toUpperCase();$('isoRead').textContent=e.target.value.toUpperCase()};
+$('speed').onchange=e=>{$('speedValue').textContent=e.target.value.toUpperCase();$('shutterRead').textContent=e.target.value.toUpperCase()};
+$('wb').onchange=e=>$('wbValue').textContent=e.target.value;
+$('ev').oninput=e=>{$('evValue').textContent=(+e.target.value).toFixed(1)+' EV';$('evRead').textContent=(+e.target.value).toFixed(1)};
+$('intensity').oninput=e=>{$('intensityValue').textContent=e.target.value+'%';video.style.opacity=Math.max(.2,e.target.value/100)};
+$('flipBtn').onclick=()=>{facing=facing==='environment'?'user':'environment';video.classList.toggle('mirror',facing==='user');startCamera()};
+video.addEventListener('click',e=>{const f=$('focusBox');f.style.left=e.clientX+'px';f.style.top=e.clientY+'px';f.classList.add('show');setTimeout(()=>f.classList.remove('show'),900)});
+function capture(){
+ if(!stream||video.readyState<2){toast('相機尚未準備好');return}
+ const w=video.videoWidth,h=video.videoHeight;canvas.width=w;canvas.height=h;
+ ctx.save();if(facing==='user'){ctx.translate(w,0);ctx.scale(-1,1)}
+ ctx.filter=profiles[currentProfile].filter;ctx.drawImage(video,0,0,w,h);ctx.restore();ctx.filter='none';
+ currentPhoto=canvas.toDataURL('image/jpeg',.94);photoName='LUMA-'+Date.now()+'.jpg';openEditor();
+}
+$('shutter').onclick=capture;
+function chooseFile(){ $('fileInput').click() }
+$('importBtn').onclick=chooseFile;$('editImport').onclick=chooseFile;
+$('fileInput').onchange=e=>{const file=e.target.files[0];if(!file)return;photoName=file.name;const reader=new FileReader();reader.onload=()=>{currentPhoto=reader.result;openEditor()};reader.readAsDataURL(file);e.target.value=''};
+function openEditor(){if(!currentPhoto)return;$('photoPreview').src=currentPhoto;$('editor').classList.add('open');updateEditPreview()}
+$('darkroomBtn').onclick=()=>{if(currentPhoto)openEditor();else chooseFile()};
+$('backCamera').onclick=()=>$('editor').classList.remove('open');
+const editIds=['Exposure','Contrast','Saturation','Warmth'];
+function editFilter(){
+ const ex=+$('editExposure').value,co=+$('editContrast').value,sa=+$('editSaturation').value,wa=+$('editWarmth').value;
+ const p=profiles[editProfile]||profiles.natural;
+ return `brightness(${1+ex/180}) contrast(${p.contrast*(1+co/100)}) saturate(${p.sat*(1+sa/100)}) sepia(${Math.max(0,(p.warm+wa)/100)}) hue-rotate(${Math.min(0,wa)*.25}deg)`;
+}
+function updateEditPreview(){
+ $('photoPreview').style.filter=editFilter();
+ editIds.forEach(n=>{$('edit'+n+'Val').textContent=$('edit'+n).value});
+ $('editProfileName').textContent=editProfile.toUpperCase();
+}
+editIds.forEach(n=>$('edit'+n).oninput=updateEditPreview);
+document.querySelectorAll('[data-editprofile]').forEach(b=>b.onclick=()=>{editProfile=b.dataset.editprofile;document.querySelectorAll('[data-editprofile]').forEach(x=>x.classList.toggle('active',x===b));updateEditPreview()});
+$('resetEdit').onclick=()=>{editIds.forEach(n=>$('edit'+n).value=0);editProfile='natural';document.querySelectorAll('[data-editprofile]').forEach(b=>b.classList.toggle('active',b.dataset.editprofile==='natural'));updateEditPreview()};
+$('savePhoto').onclick=()=>{
+ if(!currentPhoto)return;
+ const img=new Image();img.onload=()=>{
+  const max=2400,scale=Math.min(1,max/Math.max(img.width,img.height));canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);
+  ctx.filter=editFilter();ctx.drawImage(img,0,0,canvas.width,canvas.height);ctx.filter='none';
+  canvas.toBlob(blob=>{if(!blob){toast('儲存失敗');return}const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='LUMA-'+Date.now()+'.jpg';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);toast('照片已準備儲存');},'image/jpeg',.94);
+ };img.src=currentPhoto;
+};
+if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)startCamera();else toast('請使用支援相機的 Safari，或匯入照片');
+applyProfile('natural');
+</script>
+</body>
+</html>
